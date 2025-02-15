@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixieOS</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: url('same.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        .desktop {
+            background: url('same.jpg') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            flex-wrap: wrap;
+            padding: 10px;
+            height: calc(100vh - 50px);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .desktop .icon {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 10px;
+            text-align: center;
+            position: absolute;
+            cursor: move;
+            background-color: transparent;
+        }
+
+        .desktop .icon img {
+            width: 48px;
+            height: 48px;
+        }
+
+        .desktop .icon-text {
+    margin-top: 5px;
+    font-size: 12px;
+    color: white; /* Change the text color to white */
+        }
+
+        .taskbar {
+            background-color: #000000;
+            color: black;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            width: 100%;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            cursor: pointer;
+            overflow-x: auto;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
+            box-sizing: border-box;
+        }
+
+        .taskbar-icon {
+            width: 40px;
+            height: 40px;
+            background-size: cover;
+            margin: 0 10px;
+            position: relative;
+        }
+
+        .taskbar-icon::after {
+            content: attr(data-name);
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 30px;
+        }
+
+        .search-container {
+    display: flex;
+    align-items: center;
+    margin-left: 20px;
+    background-color: #1e1e1e;
+    border-radius: 20px;
+    padding: 0 10px;
+    width: 350px; /* Increased width */
+    border: 1px solid #474545;
+    height: 35px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+
+        .search-input {
+            background-color: transparent;
+            color: #000;
+            border: none;
+            padding: 0 10px;
+            border-radius: 20px;
+            width: 100%;
+            height: 30px;
+            box-shadow: none;
+            font-size: 14px;
+        }
+
+        .search-input::placeholder {
+            color: #bbb;
+        }
+
+        .search-input:focus {
+            outline: none;
+            background-color: #333;
+        }
+
+        .time-display {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: black;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .window {
+            position: absolute;
+            background-color: #000000;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            overflow: hidden;
+            width: 850px;
+            height: 500px;
+            display: none;
+        }
+
+        .window-header {
+            background-color: #000000;
+            color: white;
+            padding: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+
+        .window-header span {
+            margin-left: 10px;
+        }
+
+        .window-controls {
+            display: flex;
+            align-items: center;
+        }
+
+        .window-controls button {
+            width: 15px;
+            height: 15px;
+            margin: 0 2px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+            text-align: center;
+        }
+
+        .window-controls button.minimize {
+            background-color: #f2f202;
+        }
+
+        .window-controls button.maximize {
+            background-color: #34d602;
+        }
+
+        .window-controls button.close {
+            background-color: #f70207;
+        }
+
+        .window-controls button:hover {
+            opacity: 0.8;
+        }
+
+        .window-content {
+            padding: 10px;
+            height: calc(100% - 30px);
+            overflow: auto;
+        }
+
+        .window-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+/* System tray icons container */
+.system-tray {
+    display: flex;
+    align-items: center;
+    padding: 2px; /* Further reduced padding */
+    background-color: #1e1e1e;
+    border-radius: 6px;
+    margin-left: auto;
+}
+
+/* System tray icon styling */
+.system-tray-icon {
+    width: 14px; /* Significantly smaller icon size */
+    height: 14px; /* Significantly smaller icon size */
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin: 0 3px; /* Further reduced margin between icons */
+    cursor: pointer;
+    background-color: transparent;
+}
+
+
+
+        #appLauncher {
+            display: none;
+            position: fixed;
+            bottom: 50px;
+            left: 0;
+            width: 600px;
+            height: 600px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            transform: translateY(100%);
+        }
+
+        #appLauncher.launcher-open {
+            transform: translateY(0);
+        }
+
+        .launcher-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background-color: #1e1e1e;
+            border-bottom: 1px solid #444;
+        }
+
+        .launcher-search {
+            width: 90%;
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            background-color: #2c2c2c;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .launcher-icons {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            align-items: flex-start;
+            justify-content: flex-start;
+            height: calc(100% - 60px);
+            overflow-y: auto;
+        }
+
+        .launcher-icon {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 10px;
+            cursor: pointer;
+            background-color: transparent;
+        }
+
+        .launcher-icon img {
+            width: 48px;
+            height: 48px;
+        }
+
+        .launcher-icon .icon-text {
+            font-size: 12px;
+            color: white;
+            margin-top: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="desktop">
+        <div class="icon" id="icon-mzfx" style="top: 20px; left: 20px;" data-url="firefox.html">
+            <img src="duk.png" alt="Firefox">
+            <div class="icon-text">Firefox</div>
+        </div>
+        
+        <div class="icon" id="icon-365" style="top: 20px; left: 120px;" data-url="https://docs.google.com/document/">
+            <img src="365.png" alt="ms365">
+            <div class="icon-text">Microsoft 365</div>
+        </div>
+    
+        <div class="icon" id="icon-fe" style="top: 120px; left: 20px;" data-url="filex.html">
+            <img src="folder.png" alt="File Explorer">
+            <div class="icon-text">File Explorer</div>
+        </div>
+    
+        <div class="icon" id="icon-word" style="top: 120px; left: 120px;" data-url="https://docs.google.com">
+            <img src="word.png" alt="msWord">
+            <div class="icon-text">Microsoft Word</div>
+        </div>
+        
+        <div class="icon" id="icon-rdc" style="top: 220px; left: 20px;" data-url="rdc.html">
+            <img src="rdcp.png" alt="RDC For Linux">
+            <div class="icon-text">RDC</div>
+        </div>
+    
+        <div class="icon" id="icon-vm" style="top: 220px; left: 120px;" data-url="vm.html">
+            <img src="vm.png" alt="VM">
+            <div class="icon-text">VMWare</div>
+        </div>
+    
+        <div class="icon" id="icon-vs" style="top: 320px; left: 20px;" data-url="ced.html">
+            <img src="any.png" alt="Visual Studio Code">
+            <div class="icon-text">Visual Studio Code</div>
+        </div>
+    
+        <div class="icon" id="icon-terminal" style="top: 320px; left: 120px;" data-url="withersec.html">
+            <img src="blink.png" alt="Terminal">
+            <div class="icon-text">Terminal</div>
+        </div>
+    
+        <div class="icon" id="icon-protection" style="top: 420px; left: 20px;" data-url="ced.html">
+            <img src="shield.png" alt="Protection">
+            <div class="icon-text">Protection</div>
+        </div>
+    
+        <div class="icon" id="icon-bahmut" style="top: 420px; left: 120px;" data-url="withersec.html">
+            <img src="bak.png" alt="Я еду в Бахмут">
+            <div class="icon-text">Я еду в Бахмут</div>
+        </div>   
+    
+        <div class="icon" id="icon-ps" style="top: 520px; left: 20px;" data-url="ced.html">
+            <img src="ps.png" alt="Adobe Photoshop">
+            <div class="icon-text">Adobe Photoshop</div>
+        </div>
+        
+        <div class="icon" id="icon-discord" style="top: 520px; left: 120px;" data-url="svr.html">
+            <img src="discord.png" alt="coms">
+            <div class="icon-text">Discord</div>
+        </div>   
+    
+        <div class="icon" id="icon-spotify" style="top: 620px; left: 20px;" data-url="svr.html">
+            <img src="spotify.png" alt="coms">
+            <div class="icon-text">Spotify</div>
+        </div>   
+    
+        <div class="icon" id="icon-obs" style="top: 620px; left: 120px;" data-url="svr.html">
+            <img src="obs.png" alt="coms">
+            <div class="icon-text">OBS Studio</div>
+        </div> 
+        
+        <div class="icon" id="icon-chrome" style="top: 720px; left: 20px;" data-url="svr.html">
+            <img src="chrome.png" alt="coms">
+            <div class="icon-text">Chromium</div>
+        </div>   
+    
+        <div class="icon" id="icon-taskm" style="top: 720px; left: 120px;" data-url="Task Manager.html">
+            <img src="tasky.png" alt="coms">
+            <div class="icon-text">Task Manager</div>
+        </div>   
+    
+        <div class="icon" id="icon-logs" style="top: 820px; left: 20px;" data-url="logg.html">
+            <img src="logout.png" alt="coms">
+            <div class="icon-text">Logs</div>
+        </div>   
+    
+        <div class="icon" id="icon-settings" style="top: 820px; left: 120px;" data-url="sev.html">
+            <img src="setting.png" alt="coms">
+            <div class="icon-text">Settings</div>
+        </div>   
+
+        <div class="icon" id="icon-settings" style="top: 920px; left: 20px;" data-url="rrs.html">
+            <img src="database.png" alt="coms">
+            <div class="icon-text">File Manager</div>
+        </div> 
+    
+    </div>
+    
+
+    <div class="taskbar" id="taskbar">
+        <!-- Launcher Icon (Hel) -->
+        <div class="taskbar-icon-hel" style="background-image: url('hel.png');" data-name="Help" data-url="help.html"></div>
+    
+        <!-- Search Container -->
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="Search...">
+        </div>
+    
+        <!-- App Icons (Smaller and after the search box, displayed horizontally) -->
+        <div class="taskbar-icons">
+            <div class="taskbar-icon" style="background-image: url('folder.png');" data-url="filex.html"></div>
+            <div class="taskbar-icon" style="background-image: url('any.png');" data-url="ced.html"></div>
+            <div class="taskbar-icon" style="background-image: url('chrome (1).png');" data-url="vm.html"></div>
+            <div class="taskbar-icon" style="background-image: url('vm.png');" data-url="vm.html"></div>
+            <div class="taskbar-icon" style="background-image: url('grx.png');" data-url="vm.html"></div>
+            <div class="taskbar-icon" style="background-image: url('ps.png');" data-url="vm.html"></div>
+            <div class="taskbar-icon" style="background-image: url('youtube.png');" data-url="vm.html"></div>
+        </div>
+        
+        <!-- System Tray (for things like network, battery) -->
+        <div class="system-tray">
+            <div class="system-tray-icon" style="background-image: url('idle.png');" title="Network"></div>
+            <div class="system-tray-icon" style="background-image: url('sound.png');" title="Sound"></div>
+            <div class="system-tray-icon" style="background-image: url('blue.png');" title="Bluetooth"></div>
+            <div class="system-tray-icon" style="background-image: url('wifi.png');" title="WiFi"></div>
+            <div class="system-tray-icon" style="background-image: url('cloud.png');" title="Cloud"></div>
+            <div class="system-tray-icon" style="background-image: url('battery.png');" title="Battery"></div>
+        </div>
+    </div>
+    
+    <style>
+        /* Taskbar container styling */
+        .taskbar {
+            display: flex;
+            align-items: center;
+            background-color: #000000;
+            height: 50px;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 100;
+        }
+    
+        /* Launcher Icon (Hel) */
+        .taskbar-icon-hel {
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+        }
+    
+        /* Search container styling */
+        .search-container {
+            display: flex;
+            align-items: center;
+            background-color: #1e1e1e;
+            border-radius: 20px;
+            padding: 0 10px;
+            margin-left: 10px;
+            width: 200px; /* Adjust the width */
+            border: 1px solid #474545;
+            height: 35px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+    
+        /* Search input field */
+        .search-input {
+            background-color: transparent;
+            border: none;
+            color: white;
+            outline: none;
+            width: 100%;
+            height: 30px;
+            font-size: 16px;
+            padding-left: 10px;
+            border-radius: 10px;
+        }
+    
+        /* App Icons container */
+        .taskbar-icons {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            margin-left: 20px;
+        }
+    
+        /* App Icon styling */
+        .taskbar-icon {
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            width: 35px;
+            height: 35px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+    
+        /* System tray icons container */
+        .system-tray {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-left: auto;
+        }
+    
+        /* System tray icon styling */
+        .system-tray-icon {
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            width: 25px;
+            height: 25px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+    </style>
+    
+    
+    
+    
+    
+
+    
+
+    <div class="time-display" id="timeDisplay">00:00:00 AM</div>
+
+    <div class="window" id="windowTemplate">
+        <div class="window-header">
+            <span class="window-title">Untitled</span>
+            <div class="window-controls">
+                <button class="minimize">−</button>
+                <button class="maximize">⇱</button>
+                <button class="close">x</button>
+            </div>
+        </div>
+        <div class="window-content">
+            <iframe class="window-iframe"></iframe>
+        </div>
+    </div>
+
+    <div id="appLauncher">
+        <div class="launcher-header">
+            <input type="text" class="launcher-search" placeholder="Search apps...">
+        </div>
+        <div id="launcherIcons" class="launcher-icons"></div>
+    </div>
+
+    <div id="launcherOnlyApps" style="display: none;">
+        <div class="launcher-app" data-url="sev.html" data-name="Settings" data-icon="gear (1).png"></div>
+        <div class="launcher-app" data-url="net.html" data-name="Notepad" data-icon="notepad.png"></div>
+        <div class="launcher-app" data-url="calendar.html" data-name="Task Manager" data-icon="settings.png"></div>
+        <div class="launcher-app" data-url="calendar.html" data-name="App Store" data-icon="shop.png"></div>
+        <div class="launcher-app" data-url="Python 3.2.html" data-name="Python 3.2" data-icon="python.png"></div>
+        <div class="launcher-app" data-url="Venda Security.html" data-name="Venda Security" data-icon="antivirus.png"></div>
+        <div class="launcher-app" data-url="Calender.html" data-name="Calendar" data-icon="calendar (1).png"></div>
+        <div class="launcher-app" data-url="Calender.html" data-name="Spotify" data-icon="spotify (1).png"></div>
+        <div class="launcher-app" data-url="Calender.html" data-name="VM Workstation Pro" data-icon="works.png"></div>
+        <div class="launcher-app" data-url="host.html" data-name="Sensory NET" data-icon="2024_10_25_0gs_Kleki.png"></div>
+        <div class="launcher-app" data-url="Terminal.html" data-name="Terminal" data-icon="blink.png"></div>
+        <div class="launcher-app" data-url="gravity.html" data-name="Gravity" data-icon="gravity.png"></div>
+        <div class="launcher-app" data-url="echelon.html" data-name="Echelon" data-icon="echelon.png"></div>
+        <div class="launcher-app" data-url="XKeyscore.html" data-name="XKeyscore" data-icon="key.png"></div>
+        <div class="launcher-app" data-url="eston.html" data-name="System Log" data-icon="log-in.png"></div>
+        <div class="launcher-app" data-url="clamav.html" data-name="ClamAV" data-icon="clam.png"></div>
+        <div class="launcher-app" data-url="glass.html" data-name="GitHub" data-icon="git.png"></div>
+        <div class="launcher-app" data-url="hydra.html" data-name="Hydra" data-icon="hydra-logo.svg"></div>
+        <div class="launcher-app" data-url="jtr.html" data-name="JTRipper" data-icon="john.svg"></div
+
+    
+    </div>
+
+    <script>
+        function createWindow(title, url) {
+            const windowElement = document.getElementById('windowTemplate').cloneNode(true);
+            windowElement.id = '';
+            windowElement.style.display = 'block';
+            windowElement.style.left = '50px';
+            windowElement.style.top = '50px';
+            windowElement.querySelector('.window-title').textContent = title;
+            windowElement.querySelector('.window-iframe').src = url;
+
+            document.body.appendChild(windowElement);
+
+            makeDraggable(windowElement);
+            makeResizable(windowElement);
+
+            windowElement.querySelector('.close').addEventListener('click', function() {
+                windowElement.remove();
+            });
+
+            windowElement.querySelector('.minimize').addEventListener('click', function() {
+                windowElement.querySelector('.window-content').style.display = 'none';
+            });
+
+            windowElement.querySelector('.maximize').addEventListener('click', function() {
+                if (windowElement.style.width === '100%' && windowElement.style.height === '100%') {
+                    windowElement.style.width = '400px';
+                    windowElement.style.height = '300px';
+                } else {
+                    windowElement.style.width = '100%';
+                    windowElement.style.height = '100%';
+                    windowElement.style.left = '0';
+                    windowElement.style.top = '0';
+                }
+                windowElement.querySelector('.window-content').style.display = 'block';
+            });
+        }
+
+        function openURLInWindow(url) {
+            const title = url.split('/').pop().split('.')[0];
+            createWindow(title, url);
+        }
+
+        function makeDraggable(el) {
+            let offsetX, offsetY, mouseX, mouseY;
+
+            el.querySelector('.window-header').addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                offsetX = e.clientX - el.getBoundingClientRect().left;
+                offsetY = e.clientY - el.getBoundingClientRect().top;
+
+                function onMouseMove(e) {
+                    mouseX = e.clientX;
+                    mouseY = e.clientY;
+                    el.style.left = `${mouseX - offsetX}px`;
+                    el.style.top = `${mouseY - offsetY}px`;
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+
+                document.addEventListener('mouseup', function() {
+                    document.removeEventListener('mousemove', onMouseMove);
+                }, { once: true });
+            });
+        }
+
+        function makeResizable(el) {
+            const resizer = document.createElement('div');
+            resizer.style.width = '10px';
+            resizer.style.height = '10px';
+            resizer.style.backgroundColor = '#666';
+            resizer.style.position = 'absolute';
+            resizer.style.bottom = '0';
+            resizer.style.right = '0';
+            resizer.style.cursor = 'nwse-resize';
+            el.appendChild(resizer);
+
+            resizer.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+
+                function onMouseMove(e) {
+                    const width = e.clientX - el.getBoundingClientRect().left;
+                    const height = e.clientY - el.getBoundingClientRect().top;
+                    el.style.width = `${width}px`;
+                    el.style.height = `${height}px`;
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+
+                document.addEventListener('mouseup', function() {
+                    document.removeEventListener('mousemove', onMouseMove);
+                }, { once: true });
+            });
+        }
+
+        function showAppLauncher() {
+            const launcher = document.getElementById('appLauncher');
+            const launcherIcons = document.getElementById('launcherIcons');
+            launcherIcons.innerHTML = ''; 
+
+            
+            document.querySelectorAll('.icon').forEach(icon => {
+                const launcherIcon = document.createElement('div');
+                launcherIcon.classList.add('launcher-icon');
+                launcherIcon.innerHTML = `<img src="${icon.querySelector('img').src}" alt="${icon.querySelector('.icon-text').textContent}"><div class="icon-text">${icon.querySelector('.icon-text').textContent}</div>`;
+                launcherIcon.setAttribute('data-url', icon.getAttribute('data-url'));
+
+                launcherIcon.addEventListener('click', function() {
+                    const url = launcherIcon.getAttribute('data-url');
+                    if (url) {
+                        openURLInWindow(url);
+                        hideAppLauncher();
+                    }
+                });
+
+                launcherIcons.appendChild(launcherIcon);
+            });
+
+            
+            document.querySelectorAll('#launcherOnlyApps .launcher-app').forEach(app => {
+                const launcherIcon = document.createElement('div');
+                launcherIcon.classList.add('launcher-icon');
+                launcherIcon.innerHTML = `<img src="${app.getAttribute('data-icon')}" alt="${app.getAttribute('data-name')}"><div class="icon-text">${app.getAttribute('data-name')}</div>`;
+                launcherIcon.setAttribute('data-url', app.getAttribute('data-url'));
+
+                launcherIcon.addEventListener('click', function() {
+                    const url = launcherIcon.getAttribute('data-url');
+                    if (url) {
+                        openURLInWindow(url);
+                        hideAppLauncher();
+                    }
+                });
+
+                launcherIcons.appendChild(launcherIcon);
+            });
+
+            launcher.style.display = 'block';
+            setTimeout(() => {
+                launcher.classList.add('launcher-open');
+            }, 10);
+        }
+
+        function hideAppLauncher() {
+            const launcher = document.getElementById('appLauncher');
+            launcher.classList.remove('launcher-open');
+            setTimeout(() => {
+                launcher.style.display = 'none';
+            }, 300);
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space') {
+                const launcher = document.getElementById('appLauncher');
+                if (launcher.classList.contains('launcher-open')) {
+                    hideAppLauncher();
+                } else {
+                    showAppLauncher();
+                }
+            }
+        });
+
+        document.querySelectorAll('.icon').forEach(icon => {
+            icon.addEventListener('dblclick', function() {
+                const url = icon.getAttribute('data-url');
+                if (url) {
+                    openURLInWindow(url);
+                }
+            });
+        });
+
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const hour12 = hours % 12 || 12;
+            document.getElementById('timeDisplay').textContent = `${hour12}:${minutes}:${seconds} ${ampm}`;
+        }
+
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        
+        document.querySelectorAll('.desktop .icon').forEach(icon => {
+            let offsetX, offsetY;
+
+            icon.addEventListener('mousedown', function(e) {
+                offsetX = e.clientX - icon.getBoundingClientRect().left;
+                offsetY = e.clientY - icon.getBoundingClientRect().top;
+
+                function onMouseMove(e) {
+                    icon.style.left = `${e.clientX - offsetX}px`;
+                    icon.style.top = `${e.clientY - offsetY}px`;
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+
+                document.addEventListener('mouseup', function() {
+                    document.removeEventListener('mousemove', onMouseMove);
+                }, { once: true });
+            });
+        });
+    </script>
+
+
+
+</body>
+</html>
